@@ -123,3 +123,83 @@ Shortcuts for these, -Xmx and -Xms. Example: -Xms1g (without equal sign).
 
 
 ** Chapter 20 How lists work
+8 types of lists
+ArrayList
+CopyOnWriteArrayList
+LinkedList
+AttributeList -- used with managed beans
+RoleList -- used with Role objects
+RoleUnresolvedList -- used with Role objects
+Stack
+Vector
+
+* CopyOnWriteArrayList - Is a thread safe version of ArrayList, and is too costly, but may be efficient if traversal/retrieval vastly outnumber mutations. Everytime, we mutate the list, a copy of the list would be created. Usage:
+- Multi threaded applications
+- Multiple threads accessing the same list
+- Lots of iterations and reads
+- Few writes/ deletes/ additions
+
+
+* Arraylist
+- Instantiation creates a list with 10 elements inside. .size() will return 0 but internally it use up 10 element space.
+- When 11th item is being added, a new bigger list if created first and data copied.
+- implementation of Arraylist lives in lib/src/java.base/java/util/ArrayList.java
+- DEFAULT_CAPACITY = 10
+- Capacity increases by half of current size, newCapacity = oldCapacity + (oldCapacity >> 1)
+- So better initialize the arraylist to expected max size for performance improvements. The .size() will still return 0 for empty list but capacity is what is expected.
+- implements a marker interface called RandomAccess with no methods.
+- Unlike maps, objectc position for access is calculated as they are contiguous.
+
+* Vector
+- Just like ArrayList but thread-safe.
+- So we can use CopyOnWriteArrayList, Vector, or ArrayList with synchronized block.
+
+
+* Stack
+- Stack is a child object of Vector
+- LinkedList implements Deque and List interfaces so it's better to use that instead of stack.
+
+* LinkedList
+- has next and prev pointers and there is no concept of initial size for a LinkedList.
+
+* Chosing a list type
+- Adding to end of list - faster for LinkedList but might have performance issues with ArrayList when resizing happens.
+- Adding to start of the list - faster for LinkedList, but expensive for ArrayList.
+- Removing an item from the middle - Expensive for ArrayList becasue of shifting, also expensive for LinkedList.
+- Sorting ArrayList or LinkedList perform almost equally. They both use the underlying Arrays.sort method, but for LinkedList it first have to conbverted to Arrays.
+
+
+
+** Chapter 21 How Maps Work
+- Initializing the hashmap creates initial array of 16 elements.
+- Integer representation of the key is required(hashcode). key % size = bucket number
+- Keys must be unique, but can have same hashcode or mod of hashcode.
+- Objects are stored as a linkedList in the bucket. After a certain size of this list, it is converted to a treeMap for O(logN) worst case performance.
+- Loadfactor = 0.75, hashmap grouw by doubling each time. Items need to be moved around when that happens.
+	Map<String, Book> books = new HashMap<>(500, 0.6f);
+- Size of hashmap is always a power of 2.
+
+
+
+
+
+
+Why choose a prime number?
+
+Consider the set of keys 𝐾={0,1,...,100} and a hash table where the number of buckets is 𝑚=12. Since 3 is a factor of 12, the keys that are multiples of 3 will be hashed to buckets that are multiples of 3:
+
+Keys {0,12,24,36,...} will be hashed to bucket 0.
+Keys {3,15,27,39,...} will be hashed to bucket 3.
+Keys {6,18,30,42,...} will be hashed to bucket 6.
+Keys {9,21,33,45,...} will be hashed to bucket 9.
+If 𝐾 is uniformly distributed (i.e., every key in 𝐾 is equally likely to occur), then the choice of 𝑚 is not so critical. But, what happens if 𝐾 is not uniformly distributed? Imagine that the keys that are most likely to occur are the multiples of 3. In this case, all of the buckets that are not multiples of 3 will be empty with high probability (which is really bad in terms of hash table performance).
+
+This situation is more common that it may seem. Imagine, for instance, that you are keeping track of objects based on where they are stored in memory. If your computer's word size is four bytes, then you will be hashing keys that are multiples of 4. Needless to say that choosing 𝑚 to be a multiple of 4 would be a terrible choice: you would have 3𝑚/4 buckets completely empty, and all of your keys colliding in the remaining 𝑚/4 buckets.
+
+In general:
+
+Every key in 𝐾 that shares a common factor with the number of buckets 𝑚 will be hashed to a bucket that is a multiple of this factor.
+
+Therefore, to minimize collisions, it is important to reduce the number of common factors between 𝑚 and the elements of 𝐾. How can this be achieved? By choosing 𝑚 to be a number that has very few factors: a prime number.
+
+
