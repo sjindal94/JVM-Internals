@@ -121,6 +121,62 @@ Shortcuts for these, -Xmx and -Xms. Example: -Xms1g (without equal sign).
 * When gc is run, finalize() method of that object is called. But this is deprecated since java9. This is because, finalize method does not guarantee, the code will be run as, for example, the application itself can finish before complete garbage collection of all objects happen. So putting resource.close() calls in finalize() method is never a good idea. Putting a never ending loop in the finalize method, or any hung state, can potentially stop the GC itself.
 
 
+** Chapter 14 Generational Garbage Collection
+* Generally follow "Mark and Sweep" process. All threads in the application are paused("Stop the world"). Checks all variables in the stack adn metaspace and follows the reference. All used memory space is marked and in the second step, everything else is garbage collected. The objects are also relocated to a conitguous block of memory to fix fragmentation issues.
+* Heap is divided into young and old generation. Young is very small and has new objects. GC only runs the young generation space and any surviving objects are moved to the old generation. Minor collection is GC on young generation space(fraction of a second). Major collection(a few seconds) is switched on if needed to sweep the old generation space. Compaction will also take place here.
+* Young generation is divided into Eden, s0 and s1 spaces.
+- 1st GC happens on Eden, survivors are moved to s0.
+- 2nd GC happens on Eden and s0, survivors are moved to s1 with compaction.
+- 3nd GC happens on Eden and s1, survivors are moved to s0 with compaction.
+and so on... At any time, either od the s0 or s1 is completely empty, which is wastage but gives performace boost.
+JVM also manages the sizes of the 3 spaces and changes them dynamically for optimal performances.
+A configurable times is set for long surviving objects to be moved to old generation.
+
+** Chapter 15 Garbage Collector tuning and selection
+- Monitoring Garbage Collection using -verbose:gc
+- GC = Minor garbage collection, and full GC is major garbage collection
+- -XX:-UseAdaptiveSizePolicy - to disable 
+- run jps to know the pid of running java programs
+- run jinfo -flag UseAdaptiveSizePolicy 99467 to know if a particular flag is turned on for a program.
+- -XX:NewRatio=n (default = 2) Old generation size/ new generation size
+- -XX:SurvivorRatip=n (default = 8) S0 and S1 have 1/8th of memory each and Eden has 6/8 of memory from young generation.
+- -XX:MaxTenuringThreshold (default = 15, max = 15) How many generations should an object survive before it becomes part of the old generation.
+
+
+* Types of Collector:
+- Serial: use single thread. Good when you want other applications to use processing while gc is running. Most commonly when your app is running a background task. Performance of your app is not important but other apps on the server needs to perform optimally. -XX:+UseSerialGC
+- Parallel: if you ahve multicore processors, then use this. Also called throughput collector and is better performing than SerialGC. By default.
+- Mostly Concurrent: Pauses application during marking process but resumes it when sweeping. 2 types:
+  - -XX:UseConcMarkSweepGC (default in java9)
+  - -XX:UseG1GC (improved version and a default in java10)
+
+* G1GC
+- S0 is small and S1 is large and after first GC, objects move to old generation
+- Space is divided into 2048 regions and some of the regions are marked as eden, s0, s1 and old spaces. After young GC happens, different parts of the heap are marked again.
+- Major GC picks those old regions which are totally garbages and clear them first.
+- Tuning G1GC
+ - -XX:ConcGCThreads=n :  number of threads for GC
+ - -XX:InitiatingHeapOccupancyPercent=n : default memory 45% of full when the GC kicks in
+
+- String de-deplication in G1GC -XX:UseStringDeduplication
+ - G1GC will mdedupliucate and change references of pointers that use the same string with the same hashcode.
+ - Good to use when you know you will have a lot of duplicate strings that will live for quite a long time and these strings are not in StringPool and you are in a memory constraint environment.
+
+
+** Extra on G1GC
+https://www.oracle.com/technical-resources/articles/java/g1gc.html
+The Garbage First Garbage Collector (G1 GC) is the low-pause, server-style generational garbage collector for Java HotSpot VM. The G1 GC uses concurrent and parallel phases to achieve its target pause time and to maintain good throughput. When G1 GC determines that a garbage collection is necessary, it collects the regions with the least live data first (garbage first).
+
+A garbage collector (GC) is a memory management tool. The G1 GC achieves automatic memory management through the following operations:
+
+Allocating objects to a young generation and promoting aged objects into an old generation.
+Finding live objects in the old generation through a concurrent (parallel) marking phase. The Java HotSpot VM triggers the marking phase when the total Java heap occupancy exceeds the default threshold.
+Recovering free memory by compacting live objects through parallel copying.
+
+Additional blogs
+https://anthonyfisk.blogspot.com/2014/06/on-java-garbage-collection-analysis.html
+https://product.hubspot.com/blog/g1gc-fundamentals-lessons-from-taming-garbage-collection
+
 
 ** Chapter 20 How lists work
 8 types of lists
